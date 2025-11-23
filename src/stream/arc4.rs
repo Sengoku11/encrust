@@ -60,7 +60,7 @@ mod tests {
     const SEED: &[u8] = b"some not random key for tests";
 
     #[test]
-    #[should_panic]
+    #[should_panic(expected = "ARC4 key cannot be empty")]
     fn test_empty_key_panic() {
         AllegedRc4::new(&[]);
     }
