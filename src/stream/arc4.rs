@@ -52,3 +52,36 @@ impl AllegedRc4 {
         pb ^ k
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SEED: &[u8] = b"some not random key for tests";
+
+    #[test]
+    #[should_panic]
+    fn test_empty_key_panic() {
+        AllegedRc4::new(&[]);
+    }
+
+    #[test]
+    fn test_oversized_key() {
+        AllegedRc4::new(&[0u8; 500]);
+    }
+
+    #[test]
+    fn test_encrypt() {
+        let mut cipher = AllegedRc4::new(SEED);
+        let mut decipher = AllegedRc4::new(SEED);
+
+        let message = b"I want to encode this";
+        let mut ciphertext = message.to_vec();
+
+        cipher.apply_keystream(&mut ciphertext);
+        assert_ne!(ciphertext, message, "Message should be encrypted");
+
+        decipher.apply_keystream(&mut ciphertext);
+        assert_eq!(ciphertext, message, "Message should be decrypted");
+    }
+}
