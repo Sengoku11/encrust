@@ -28,7 +28,8 @@ impl AllegedRc4 {
     }
 
     // Applies the ARC4 keystream on the given buffer in place.
-    pub fn encrypt(&mut self, buf: &mut [u8]) {
+    // Use for both to encode and decode.
+    pub fn apply_keystream(&mut self, buf: &mut [u8]) {
         for b in buf {
             *b = self.process_byte(*b);
         }
