@@ -1,4 +1,4 @@
-struct AllegedRc4 {
+pub struct AllegedRc4 {
     i: u8,
     j: u8,
     s: [u8; 256],
