@@ -26,4 +26,28 @@ impl AllegedRc4 {
         // Set i and j to zero.
         Self { i: 0, j: 0, s }
     }
+
+    // Applies the ARC4 keystream on the given buffer in place.
+    pub fn encrypt(&mut self, buf: &mut [u8]) {
+        for b in buf {
+            *b = self.process_byte(*b);
+        }
+    }
+
+    // Generates one keystream byte and XORs it with the input.
+    // Implements Pseudo-Random Generation Algorithm (PRGA).
+    pub fn process_byte(&mut self, pb: u8) -> u8 {
+        self.i = self.i.wrapping_add(1);
+        self.j = self.j.wrapping_add(self.s[self.i as usize]);
+
+        let i = self.i as usize;
+        let j = self.j as usize;
+
+        self.s.swap(i, j);
+
+        let t = self.s[i].wrapping_add(self.s[j]);
+        let k = self.s[t as usize];
+
+        pb ^ k
+    }
 }
