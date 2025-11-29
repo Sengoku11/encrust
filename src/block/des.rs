@@ -74,13 +74,16 @@ pub struct Des {
 impl Des {
     /// Implements Key Scheduling Algorithm (KSA).
     pub fn new(k: u64) -> Self {
-        let mut state: u64 = permutate(k, &PC_1, 64);
+        // PC-1 step. Permutate and reduce original key.
+        let mut key_56_bit: u64 = permutate(k, &PC_1, 64);
 
+        // Key rotation step. Generate 16 56-bits keys.
         let precompressed_keys: [u64; 16] = core::array::from_fn(|i| {
-            state = rotate_key(state, i);
-            state
+            key_56_bit = rotate_key(key_56_bit, i);
+            key_56_bit
         });
 
+        // PC-2 step. Compress into 48-bit keys.
         let round_keys = core::array::from_fn(|i| permutate(precompressed_keys[i], &PC_2, 56));
 
         Self { round_keys }
@@ -90,8 +93,13 @@ impl Des {
 /// Takes bits from the input key `k` at positions specified in permutation vector,
 /// and writes them sequentially into the output key.
 fn permutate(k: u64, permutation_vec: &[u8], k_size: u8) -> u64 {
+    if k_size < 64 {
+        assert!(k < (1u64 << k_size), "k is bigger than declared k_size");
+    }
+
     let mut result: u64 = 0;
 
+    // Lookup an input bit and "push" it to the result number.
     for bit_pos in permutation_vec.iter() {
         let shift = (k_size - bit_pos) as u64;
         let input_bit = (k >> shift) & 1;
@@ -103,6 +111,7 @@ fn permutate(k: u64, permutation_vec: &[u8], k_size: u8) -> u64 {
 
 /// Rotates 56-bit key `k` by one or two positions depending on the round `r`.
 fn rotate_key(k: u64, r: usize) -> u64 {
+    assert!(r < 16, "max round is 15 (counting from round0)");
     let rotations = if matches!(r, 0 | 1 | 8 | 15) { 1 } else { 2 };
 
     // Split key and rotate its parts.
@@ -154,6 +163,12 @@ mod tests {
         for (i, &n) in INITIAL_PERMUTATION.iter().enumerate() {
             assert_eq!((i + 1) as u8, FINAL_PERMUTATION[(n - 1) as usize]);
         }
+    }
+
+    #[test]
+    #[should_panic(expected = "k is bigger than declared k_size")]
+    fn test_permutate_panic() {
+        permutate(u64::MAX, &PC_1, 56);
     }
 
     #[test]
