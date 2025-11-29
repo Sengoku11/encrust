@@ -76,8 +76,6 @@ impl Des {
     pub fn new(k: u64) -> Self {
         let mut state: u64 = permutate(k, &PC_1);
 
-        println!("state {}", state);
-
         let precompressed_keys: [u64; 16] = core::array::from_fn(|i| {
             state = rotate_key(state, i);
             state
@@ -104,7 +102,6 @@ fn permutate(k: u64, permutation_vec: &[u8]) -> u64 {
 }
 
 /// Rotates 56-bit key `k` by one or two positions depending on the round `r`.
-/// TODO: test
 fn rotate_key(k: u64, r: usize) -> u64 {
     let rotations = if matches!(r, 0 | 1 | 8 | 15) { 1 } else { 2 };
 
@@ -186,5 +183,15 @@ mod tests {
         let expected = 32866672u64;
         // 0001111101011000000101110000
         assert_eq!(rotate_left(key, rotations), expected);
+    }
+
+    #[test]
+    fn test_rotate_key() {
+        let key: u64 = 46842079712850309;
+        let round = 3; // two rotations
+        // 1010011001101010100111111001_0001110100110011000110000101
+        let expected: u64 = 43253131312416276;
+        // 1001100110101010011111100110_0111010011001100011000010100
+        assert_eq!(rotate_key(key, round), expected);
     }
 }
