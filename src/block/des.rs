@@ -74,14 +74,14 @@ pub struct Des {
 impl Des {
     /// Implements Key Scheduling Algorithm (KSA).
     pub fn new(k: u64) -> Self {
-        let mut state: u64 = permutate(k, &PC_1);
+        let mut state: u64 = permutate(k, &PC_1, 64);
 
         let precompressed_keys: [u64; 16] = core::array::from_fn(|i| {
             state = rotate_key(state, i);
             state
         });
 
-        let round_keys = core::array::from_fn(|i| permutate(precompressed_keys[i], &PC_2));
+        let round_keys = core::array::from_fn(|i| permutate(precompressed_keys[i], &PC_2, 56));
 
         Self { round_keys }
     }
@@ -89,11 +89,11 @@ impl Des {
 
 /// Takes bits from the input key `k` at positions specified in permutation vector,
 /// and writes them sequentially into the output key.
-fn permutate(k: u64, permutation_vec: &[u8]) -> u64 {
+fn permutate(k: u64, permutation_vec: &[u8], k_size: u8) -> u64 {
     let mut result: u64 = 0;
 
     for bit_pos in permutation_vec.iter() {
-        let shift = (64 - bit_pos) as u64;
+        let shift = (k_size - bit_pos) as u64;
         let input_bit = (k >> shift) & 1;
         result = (result << 1) | input_bit;
     }
@@ -162,7 +162,16 @@ mod tests {
         // 11111111_11111111_11111111_11111111_11111111_11111111_11111011_00101101
         let expected = 35888057248645119;
         // 00000000_01111111_01111111_11111111_01110111_11111011_11111111_11111111
-        assert_eq!(permutate(key, &PC_1), expected);
+        assert_eq!(permutate(key, &PC_1, 64), expected);
+    }
+
+    #[test]
+    fn test_pc_2() {
+        let key: u64 = 35888057248645119;
+        // 00000000_01111111_01111111_11111111_01110111_11111011_11111111_11111111
+        let expected = 272678883688445;
+        // 00000000_00000000_11110111_11111111_11111111_11111111_11111111_11111101;
+        assert_eq!(permutate(key, &PC_2, 56), expected);
     }
 
     #[test]
