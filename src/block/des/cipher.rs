@@ -35,7 +35,6 @@ impl Des {
     }
 
     /// Encrypt any given 64-bit block of text.
-    /// TODO: test after decrypt is implemented
     pub fn encrypt(&self, plain_block: u64) -> u64 {
         let ip_block: u64 = permutate(plain_block, &INITIAL_PERMUTATION, 64);
 
@@ -44,6 +43,25 @@ impl Des {
 
         // Twist halves and apply f function.
         for i in 0..16 {
+            (left, right) = (right, left ^ apply_f(right, self.round_keys[i]));
+        }
+
+        (left, right) = (right, left);
+
+        let merged = merge_halves(left, right, 32);
+
+        permutate(merged, &FINAL_PERMUTATION, 64)
+    }
+
+    /// Encrypt any given 64-bit block of text.
+    pub fn decrypt(&self, cipher_block: u64) -> u64 {
+        let ip_block: u64 = permutate(cipher_block, &INITIAL_PERMUTATION, 64);
+
+        let mut left: u64 = (ip_block & MASK_LEFT_32_BIT) >> 32;
+        let mut right: u64 = ip_block & MASK_RIGHT_32_BIT;
+
+        // Twist halves and apply f function.
+        for i in (0..=15).rev() {
             (left, right) = (right, left ^ apply_f(right, self.round_keys[i]));
         }
 
@@ -175,8 +193,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_key_scheduling() {
-        Des::new(u64::MAX - 1234);
+    fn test_encrypt_decrypt() {
+        let cipher = Des::new(u64::MAX - 1234);
+
+        let plaintext: u64 = 123456789101112u64;
+        let ciphertext: u64 = cipher.encrypt(plaintext);
+
+        assert_ne!(plaintext, ciphertext);
+        assert_eq!(plaintext, cipher.decrypt(ciphertext));
+
+        // TODO: more tests:
+        // 1. output is different with different key
+        // 2. output is different with different plaintext
+        // 3. output is always the same with same inputs
     }
 
     #[test]
